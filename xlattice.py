@@ -5,7 +5,7 @@ February 4, 2019
 
 This module utilizes the networkx module to generate unit cell lattice structures
 """
-
+from __future__ import division
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
