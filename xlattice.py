@@ -112,7 +112,7 @@ def snap_through_lattice(inclined_angle, edge_length, wall_height, wall_grid_siz
     for j in np.arange(4):
         G.add_edge(top_node, top_node-node_each_layer+wall_grid_size[1]*j)
     
-    
+    movingNodes = [top_node]
 
     # If wanted, add bottom node and the edges to it
     if both_side:
@@ -123,6 +123,7 @@ def snap_through_lattice(inclined_angle, edge_length, wall_height, wall_grid_siz
         for jj in np.arange(4):
             G.add_edge(node_count, 1 + wall_grid_size[1]*jj)         
         print('Nodes under load: ', top_node,' and ', bottom_node)
+        movingNodes.append(bottom_node)
     else:
         print('Nodes under load: ', top_node)
     
@@ -130,7 +131,11 @@ def snap_through_lattice(inclined_angle, edge_length, wall_height, wall_grid_siz
     temp3 = wall_grid_size[0]*node_each_layer
     print('Nodes being fixed: ', 1, 1+wall_grid_size[1],1+wall_grid_size[1]*2, 1+wall_grid_size[1]*3,
          1+temp3, 1+temp3+wall_grid_size[1],1+temp3+wall_grid_size[1]*2, 1+temp3+wall_grid_size[1]*3, '\n')
-    return G
+
+    fixedNodes = [1, 1+wall_grid_size[1],1+wall_grid_size[1]*2, 1+wall_grid_size[1]*3,
+         1+temp3, 1+temp3+wall_grid_size[1],1+temp3+wall_grid_size[1]*2, 1+temp3+wall_grid_size[1]*3]
+
+    return G, movingNodes, fixedNodes
 
 
 ###################################################
@@ -183,28 +188,49 @@ def generate_FCC(width, depth, height):
 
     return G
 
-def print_to_file(G, outputFile):
+def print_to_file(G, outputFile, movingNodes=None, fixedNodes=None):
     # prints nodes and elements in format specified by Abhishek Tapadar (abhishektapadar at stanford dot edu)
  	# G is a NetworkX graph object
  	# outputFile is the name of the output file (can be just filename or a full path + name)
+ 	# optionally prints moving nodes and fixed nodes
+
+ 	def writeNodesFormatted(nodes):
+ 		for n in nodes:
+ 			file.write(str(n) + " ")
+ 			pos = G.node[n]["pos"]
+ 			for i in range(len(pos)):
+ 				file.write(str(pos[i]) + " ")
+ 			file.write("\n")
+
+ 	def writeElementsFormatted(elements):
+ 		for e in elements:
+ 			if e[0] > e[1]:
+ 				file.write(str(e[1]) + " " + str(e[0]) + " ")
+ 			else:
+ 				file.write(str(e[0]) + " " + str(e[1]) + " ")
+ 			file.write("\n")
+
+
  	file = open(outputFile, "w")
  	# sort nodes and output in ascending order
  	file.write("NODES: NODE_ID X Y Z\n")
  	nodes = sorted(list(G))
- 	for n in nodes:
- 		file.write(str(n) + " ")
- 		pos = G.node[n]["pos"]
- 		for i in range(len(pos)):
- 			file.write(str(i) + " ")
- 		file.write("\n")
+ 	writeNodesFormatted(nodes)
  	
  	# output elements (order does not matter) as (n1, n2) tuples where n1 < n2
  	file.write("ELEMENTS: N1 N2\n")
- 	for e in G.edges:
- 		if e[0] > e[1]:
- 			file.write(str(e[1]) + " " + str(e[0]) + " ")
- 		else:
- 			file.write(str(e[0]) + " " + str(e[1]) + " ")
- 		file.write("\n")
+ 	writeElementsFormatted(G.edges)
+ 		
+ 	# output moving nodes
+ 	if movingNodes != None:
+ 		file.write("MOVING NODES: NODE_ID X Y Z\n")
+ 		movingNodes.sort()
+ 		writeNodesFormatted(movingNodes)
+
+ 	# output fixed nodes
+ 	if fixedNodes != None:
+ 		file.write("FIXED NODES: NODE_ID X Y Z\n")
+ 		fixedNodes.sort()
+ 		writeNodesFormatted(fixedNodes)
 
  	file.close()
