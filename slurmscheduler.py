@@ -19,6 +19,7 @@ class Scheduler:
   # additional arguments can be specified by the flags string
   # this method will send "sbatch file flags" to the shell
   # NOTE: a space is automatically added between file and flags, but any spaces in flags must be specified in flags itself
+  # 
     jobID, out, err = sbatch(file, flags)
     if jobID != None: self.database[jobID] = 0
 
@@ -145,3 +146,4 @@ def createLSDynaBashScript(keyFile, directory=None, outputFile=None, outputDirec
     "ls-dyna_smp_s_r910_x64_redhat56_ifort131 I= " + keyFile + " NCPU= " + str(numCPU)]
   fullPath = os.path.join(outputDirectory, outputFile)
   createScript(script, fullPath)
+  return fullPath
