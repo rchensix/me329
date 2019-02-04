@@ -19,9 +19,9 @@ class Scheduler:
   # additional arguments can be specified by the flags string
   # this method will send "sbatch file flags" to the shell
   # NOTE: a space is automatically added between file and flags, but any spaces in flags must be specified in flags itself
-  # 
     jobID, out, err = sbatch(file, flags)
     if jobID != None: self.database[jobID] = 0
+    return (jobID, out, err)
 
   def update(self):
   # updates the status for all submitted jobs by calling squeue
@@ -70,7 +70,7 @@ def sbatch(file, flags=""):
 # additional arguments can be specified by the flags string
 # this method will send "sbatch file flags" to the shell
 # NOTE: a space is automatically added between file and flags, but any spaces in flags must be specified in flags itself
-  popen = subprocess.Popen("sbatch " + file + flags, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+  popen = subprocess.Popen("sbatch " + file + " " + flags, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
   out, err = popen.communicate()
   if len(out) != 0:
     jobID = out.split()[-1] # NOTE: this may need to be updated in a future version to be truly unique (not sure exactly how SLURM assigns jobIDs)
@@ -127,23 +127,20 @@ def createLSDynaBashScript(keyFile, directory=None, outputFile=None, outputDirec
     numNode = 1
   if numCPU == None:
     numCPU = 24
+  fullPath = os.path.join(outputDirectory, outputFile)
   script = ["#!/bin/bash",
     "#SBATCH -J " + jobName,
     "#SBATCH -o " + jobName + ".out",
     "#SBATCH -t " + maxTime,
     "#SBATCH -N " + str(numNode),
     "#SBATCH -n " + str(numCPU),
+    "#SBATCH -D " + outputDirectory,
     "module purge",
     "module load intel/Developer-2018.1",
     "module load apps/ls-dyna/9.1.0",
-    "SLURM_SUBMIT_DIR = '" + outputDirectory + "'",
-    "export SLURM_SUBMIT_DIR",
     "echo The master node of this job is `hostname`",
-    "echo The working directory is `echo $SLURM_SUBMIT_DIR `",
     "echo This job runs on the following nodes:",
     "echo `cat $SLURM_JOB_NODELIST `",
-    "cd $SLURM_SUBMIT_DIR",
-    "ls-dyna_smp_s_r910_x64_redhat56_ifort131 I= " + keyFile + " NCPU= " + str(numCPU)]
-  fullPath = os.path.join(outputDirectory, outputFile)
+    "ls-dyna_smp_s_r910_x64_redhat56_ifort131 I= " + os.path.join(directory, keyFile) + " NCPU= " + str(numCPU)]
   createScript(script, fullPath)
-  return fullPath
+  return fullPath, os.path.dirname(fullPath)
