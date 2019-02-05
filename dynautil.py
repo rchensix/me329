@@ -4,6 +4,7 @@
 
 import math
 import networkx
+import numpy as np
 
 def writeKeyFile(G, outputFile, size=1, movingNodes=None, fixedNodes=None, cards=None):
 	# Creates a LS-Dyna outputFile.k file with elements found in lattice G, 
@@ -164,3 +165,53 @@ def unitVec(a, b):
 	l = math.sqrt((b[0]-a[0])**2 + (b[1]-a[1])**2 + (b[2]-a[2])**2)
 	vec = ((b[0]-a[0])/l, (b[1]-a[1])/l, (b[2]-a[2])/l)
 	return vec
+
+def parseDynaBndout(file):
+	# file can either be filename or full file path + name
+	results = dict() # nid:numpy array N x 5 with (t, Fx, Fy, Fz, E) as elements
+	bndout = open(file, "r")
+	t = None
+	for line in bndout:
+		if " n o d a l   f o r c e/e n e r g y    o u t p u t  t=" in line:
+			t = float(line.split()[-1]) # get current timestep
+		elif " nd#" in line:
+			splitLine = line.split()
+			nid = splitLine[1]
+			Fx = splitLine[3]
+			Fy = splitLine[5]
+			Fz = splitLine[7]
+			E = splitLine[9]
+			if nid in results:
+				results[nid] = np.append(results[nid], np.array((t, Fx, Fy, Fz, E)), axis=0)
+			else:
+				results[nid] = np.array((t, Fx, Fy, Fz, E))
+	bndout.close()
+	return result
+
+def parseDynaNodout(file):
+	# file can either be filename or full file path + name
+	results = dict() # nid:numpy array N x 4 with (t, ux, uy, uz) as elements
+	nodout = open(file, "r")
+	t = None
+	isData = False # this is here bc of the weird file setup in nodout files
+	for line in nodout:
+		if " n o d a l   p r i n t   o u t   f o r   t i m e  s t e p" in line:
+			t = float(line.split()[-2]) # get current timestep
+		elif " nodal point  x-disp" in line:
+			isData = True 
+			continue # data is on next line; skip current line
+		elif isData:
+			# nodout file is delimited in very strange way
+			# numbers seem to be delimited by 12 character increments
+			# nid is 10 delimited?
+			nid = int(line[0:10])
+			ux = float(line[10:22])
+			uy = float(line[22:34])
+			uz = float(line[34:46])
+			if nid in results:
+				results[nid] = np.append(results[nid], np.array((t, ux, uy, uz)), axis=0)
+			else:
+				results[nid] = np.array((t, ux, uy, uz))
+			isData = False
+	nodout.close()
+	return result
