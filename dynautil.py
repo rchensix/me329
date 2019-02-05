@@ -176,17 +176,17 @@ def parseDynaBndout(file):
 			t = float(line.split()[-1]) # get current timestep
 		elif " nd#" in line:
 			splitLine = line.split()
-			nid = splitLine[1]
-			Fx = splitLine[3]
-			Fy = splitLine[5]
-			Fz = splitLine[7]
-			E = splitLine[9]
+			nid = int(splitLine[1])
+			Fx = float(splitLine[3])
+			Fy = float(splitLine[5])
+			Fz = float(splitLine[7])
+			E = float(splitLine[9])
 			if nid in results:
-				results[nid] = np.append(results[nid], np.array((t, Fx, Fy, Fz, E)), axis=0)
+				results[nid] = np.append(results[nid], np.array([t, Fx, Fy, Fz, E], ndmin=2), axis=0)
 			else:
-				results[nid] = np.array((t, Fx, Fy, Fz, E))
+				results[nid] = np.array([t, Fx, Fy, Fz, E], ndmin=2)
 	bndout.close()
-	return result
+	return results
 
 def parseDynaNodout(file):
 	# file can either be filename or full file path + name
@@ -209,9 +209,9 @@ def parseDynaNodout(file):
 			uy = float(line[22:34])
 			uz = float(line[34:46])
 			if nid in results:
-				results[nid] = np.append(results[nid], np.array((t, ux, uy, uz)), axis=0)
+				results[nid] = np.append(results[nid], np.array([t, ux, uy, uz], ndmin=2), axis=0)
 			else:
-				results[nid] = np.array((t, ux, uy, uz))
+				results[nid] = np.array([t, ux, uy, uz], ndmin=2)
 			isData = False
 	nodout.close()
-	return result
+	return results
