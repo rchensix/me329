@@ -14,6 +14,11 @@ def writeKeyFile(G, outputFile, size=1, movingNodes=None, fixedNodes=None, cards
 	
 	file = open(outputFile, "w")
 
+	# write any optional cards at top of file
+	if cards != None and len(cards) != 0:
+		for card in cards:
+			file.write(card + "\n")
+
 	# mesh the lattice
 	elements, allNodes = meshBeamEdges(G, size)
 
@@ -36,11 +41,6 @@ def writeKeyFile(G, outputFile, size=1, movingNodes=None, fixedNodes=None, cards
 	file.write("*BOUNDARY_SPC_NODE\n")
 	file.write("$#     nid       cid      dofx      dofy      dofz     dofrx     dofry     dofrz\n")
 	writeSPC(file, fixedNodes)
-
-	# write cards
-	if cards != None and len(cards) != 0:
-		for card in cards:
-			file.write(card + "\n")
 
 	file.close()
 
@@ -215,3 +215,19 @@ def parseDynaNodout(file):
 			isData = False
 	nodout.close()
 	return results
+
+def importDynaCardsList(file):
+	# file can either be filename or full file path + name
+	# reads a file full of LS-Dyna keyword cards and returns a list
+	# cards are separated by *
+	f = open(file)
+	cards = list()
+	currentCard = ""
+	for line in f:
+		if line[0] == "*" and len(currentCard) != 0:
+			cards.append(currentCard)
+			currentCard = ""
+		currentCard += line
+	cards.append(currentCard)
+	f.close()
+	return cards
