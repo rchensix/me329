@@ -231,7 +231,8 @@ def generate_BCC_type2 (width, depth, height):
     
     return G, movingNodes, fixedNodes
 ###################################################
-def generate_FCC(width, depth, height):
+# open type FCC does not top center and bottom center nodes in a unit lattice
+def generate_FCC(width, depth, height, open_type=False):
     G = nx.Graph()
     node_count = 1
     G.add_node(node_count, pos=(0, 0, 0))
@@ -258,10 +259,6 @@ def generate_FCC(width, depth, height):
     G.add_node(node_count, pos=(width / 2, depth, height / 2))
     node_count += 1
     G.add_node(node_count, pos=(0, depth / 2, height / 2))
-    node_count += 1
-    G.add_node(node_count, pos=(width / 2, depth / 2, 0))
-    node_count += 1
-    G.add_node(node_count, pos=(width / 2, depth / 2, height))
 
     for i in np.arange(9, 13):
         for j in [-8, -7, -4, -3]:
@@ -270,10 +267,15 @@ def generate_FCC(width, depth, height):
             else:
                 G.add_edge(i, i + j)
 
-    for m in [5, 6, 7, 8]:
-        G.add_edge(14, m)
-    for n in [1, 2, 3, 4]:
-        G.add_edge(13, n)
+    if not open_type:            
+        for m in [5, 6, 7, 8]:
+            G.add_edge(14, m)
+        for n in [1, 2, 3, 4]:
+            G.add_edge(13, n)
+        node_count += 1
+        G.add_node(node_count, pos=(width / 2, depth / 2, 0))
+        node_count += 1
+        G.add_node(node_count, pos=(width / 2, depth / 2, height))
 
     print('Nodes under load: 5, 6, 7, 8 \n')
     print('Nodes being fixed: 1, 2, 3, 4 \n')
