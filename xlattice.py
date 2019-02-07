@@ -268,14 +268,14 @@ def generate_FCC(width, depth, height, open_type=False):
                 G.add_edge(i, i + j)
 
     if not open_type:            
-        for m in [5, 6, 7, 8]:
-            G.add_edge(14, m)
-        for n in [1, 2, 3, 4]:
-            G.add_edge(13, n)
         node_count += 1
         G.add_node(node_count, pos=(width / 2, depth / 2, 0))
         node_count += 1
         G.add_node(node_count, pos=(width / 2, depth / 2, height))
+        for m in [5, 6, 7, 8]:
+            G.add_edge(14, m)
+        for n in [1, 2, 3, 4]:
+            G.add_edge(13, n)
 
     print('Nodes under load: 5, 6, 7, 8 \n')
     print('Nodes being fixed: 1, 2, 3, 4 \n')
@@ -283,6 +283,7 @@ def generate_FCC(width, depth, height, open_type=False):
     fixedNodes = [1, 2, 3, 4]
 
     return G, movingNodes, fixedNodes
+###########################################################
 
 def print_to_file(G, outputFile, movingNodes=None, fixedNodes=None):
     # prints nodes and elements in format specified by Abhishek Tapadar (abhishektapadar at stanford dot edu)
