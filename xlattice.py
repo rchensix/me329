@@ -137,7 +137,99 @@ def snap_through_lattice(inclined_angle, edge_length, wall_height, wall_grid_siz
 
     return G, movingNodes, fixedNodes
 
+###################################################
+def generate_simple_cubic (width, depth, height):
+    G = nx.Graph()
+    node_count = 1
+    G.add_node(node_count, pos=(0, 0, 0))
+    node_count += 1
+    G.add_node(node_count, pos=(width, 0, 0))
+    node_count += 1
+    G.add_node(node_count, pos=(width, depth, 0))
+    node_count += 1
+    G.add_node(node_count, pos=(0, depth, 0))
+    node_count += 1
+    G.add_node(node_count, pos=(0, 0, height))
+    node_count += 1
+    G.add_node(node_count, pos=(width, 0, height))
+    node_count += 1
+    G.add_node(node_count, pos=(width, depth, height))
+    node_count += 1
+    G.add_node(node_count, pos=(0, depth, height))
 
+
+    for i in np.arange(1,5):
+        G.add_edge(i, i+4)
+    for j in [1,2,3,5,6,7]:
+        G.add_edge(j, j+1)
+    G.add_edge(1,4)
+    G.add_edge(5,8)
+    movingNodes = [5, 6, 7, 8]
+    fixedNodes = [1, 2, 3, 4]
+    
+    return G, movingNodes, fixedNodes
+
+###################################################
+def generate_BCC (width, depth, height):
+    G = nx.Graph()
+    node_count = 1
+    G.add_node(node_count, pos=(0, 0, 0))
+    node_count += 1
+    G.add_node(node_count, pos=(width, 0, 0))
+    node_count += 1
+    G.add_node(node_count, pos=(width, depth, 0))
+    node_count += 1
+    G.add_node(node_count, pos=(0, depth, 0))
+    node_count += 1
+    G.add_node(node_count, pos=(0, 0, height))
+    node_count += 1
+    G.add_node(node_count, pos=(width, 0, height))
+    node_count += 1
+    G.add_node(node_count, pos=(width, depth, height))
+    node_count += 1
+    G.add_node(node_count, pos=(0, depth, height))
+    node_count += 1
+    G.add_node(node_count, pos=(width/2, depth/2, height/2))
+
+    for i in np.arange(1,9):
+        G.add_edge(i, 9)
+
+    movingNodes = [5, 6, 7, 8]
+    fixedNodes = [1, 2, 3, 4]
+    
+    return G, movingNodes, fixedNodes
+
+###################################################
+def generate_BCC_type2 (width, depth, height):
+    G = nx.Graph()
+    node_count = 1
+    G.add_node(node_count, pos=(0, 0, 0))
+    node_count += 1
+    G.add_node(node_count, pos=(width, 0, 0))
+    node_count += 1
+    G.add_node(node_count, pos=(width, depth, 0))
+    node_count += 1
+    G.add_node(node_count, pos=(0, depth, 0))
+    node_count += 1
+    G.add_node(node_count, pos=(0, 0, height))
+    node_count += 1
+    G.add_node(node_count, pos=(width, 0, height))
+    node_count += 1
+    G.add_node(node_count, pos=(width, depth, height))
+    node_count += 1
+    G.add_node(node_count, pos=(0, depth, height))
+    node_count += 1
+    G.add_node(node_count, pos=(width/2, depth/2, height/2))
+
+    for i in np.arange(1,9):
+        G.add_edge(i, 9)
+    for j in np.arange(1,5):
+        G.add_edge(j, j+4)
+        
+    movingNodes = [5, 6, 7, 8]
+    fixedNodes = [1, 2, 3, 4]
+    
+    return G, movingNodes, fixedNodes
 ###################################################
 def generate_FCC(width, depth, height):
     G = nx.Graph()
@@ -185,8 +277,10 @@ def generate_FCC(width, depth, height):
 
     print('Nodes under load: 5, 6, 7, 8 \n')
     print('Nodes being fixed: 1, 2, 3, 4 \n')
+    movingNodes = [5, 6, 7, 8]
+    fixedNodes = [1, 2, 3, 4]
 
-    return G
+    return G, movingNodes, fixedNodes
 
 def print_to_file(G, outputFile, movingNodes=None, fixedNodes=None):
     # prints nodes and elements in format specified by Abhishek Tapadar (abhishektapadar at stanford dot edu)
