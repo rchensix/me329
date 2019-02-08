@@ -1,7 +1,7 @@
 *KEYWORD  
 *CONTROL_TERMINATION
 $#  endtim    endcyc     dtmin    endeng    endmas     nosol     
-     180.0         0       0.0       0.01.000000E8         0
+     100.0         0       0.0       0.01.000000E8         0
 *DATABASE_BNDOUT
 $#      dt    binary      lcur     ioopt
        1.0         1         0         1
@@ -33,16 +33,14 @@ $#     ts1       ts2       tt1       tt2     nsloc     ntloc
 PLA
 $#     mid        ro         e        pr        da        db  not used        
          1    1250.0  3500.0e6      0.36       0.0       0.0       0.0
+*DAMPING_GLOBAL
+$#    lcid    valdmp       stx       sty       stz       srx       sry       srz
+         0       1.0       0.0       0.0       0.0       0.0       0.0       0.0   
+
 *DEFINE_CURVE_TITLE
 ConstantVelocity
 $#    lcid      sidr       sfa       sfo      offa      offo    dattyp     lcint
          1         0       1.0       1.0       0.0       0.0         0         0
 $#                a1                  o1  
-                 0.0                 0.1
-               180.0                 0.1
-               180.1                -0.1
-               360.0                -0.1
-*DAMPING_GLOBAL
-$#    lcid    valdmp       stx       sty       stz       srx       sry       srz
-         0       1.0       0.0       0.0       0.0       0.0       0.0       0.0   
-         
+                 0.0               -0.05
+               500.0               -0.05

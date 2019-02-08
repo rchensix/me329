@@ -25,7 +25,7 @@ class Scheduler:
 
   def update(self):
   # updates the status for all submitted jobs by calling squeue
-    out = squeue()
+    out = squeue()[0]
     enqueued = self.parseQueue(out)
     for jobID  in self.database:
       if jobID not in enqueued and self.database[jobID] == 0:
@@ -35,7 +35,7 @@ class Scheduler:
   # returns status of jobID if given, otherwise returns database
   # if invalid jobID given, returns None
     if jobID != None: jobID = str(jobID) # convert to string
-    if jobID != None and jobID in self.database and self.database[jobID] == 1:
+    if (jobID != None) and (jobID in self.database) and (self.database[jobID] == 1):
       return 1
     self.update()
     if jobID != None:
@@ -52,12 +52,8 @@ class Scheduler:
   
   def parseQueue(self, out):
     # returns of set of all jobIDs in the queue (including ones not submitted by Scheduler)
-    # f = open("out.out", "w+") # debugging
-    # f.write(out) # debugging
-    # f.close() # debugging
     enqueued = set()
-    for line in out:
-      # print(len(line)) # debugging
+    for line in out.split("\n"):
       if len(line) > 1: # there's some weird bug with one character blank line
         jobID = line.split()[0]
         if jobID != "JOBID":
@@ -70,8 +66,7 @@ def sbatch(file, flags=""):
 # additional arguments can be specified by the flags string
 # this method will send "sbatch file flags" to the shell
 # NOTE: a space is automatically added between file and flags, but any spaces in flags must be specified in flags itself
-  popen = subprocess.Popen("sbatch " + file + " " + flags, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-  out, err = popen.communicate()
+  out, err = shell("sbatch " + file + " " + flags)
   if len(out) != 0:
     jobID = out.split()[-1] # NOTE: this may need to be updated in a future version to be truly unique (not sure exactly how SLURM assigns jobIDs)
   else:
@@ -81,9 +76,24 @@ def sbatch(file, flags=""):
 def squeue(flags=""):
 # calls "squeue flags" in shell and returns output
 # NOTE: a space is automatically added between squeue and flags, but any spaces in flags must be specified in flags itself
-  popen = subprocess.Popen("squeue " + flags, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+  return shell("squeue " + flags)
+
+def cd(flags=""):
+  # calls "cd flags" in shell and returns output
+  # NOTE: a space is automatically added between squeue and flags, but any spaces in flags must be specified in flags itself
+  return shell("cd " + flags)
+
+def mkdir(flags=""):
+  # calls "cd flags" in shell and returns output
+  # NOTE: a space is automatically added between squeue and flags, but any spaces in flags must be specified in flags itself
+  return shell("mkdir " + flags)
+
+def shell(input):
+  # generic shell call used by other methods
+  # calls input from shell and returns output
+  popen = subprocess.Popen(input, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
   out, err = popen.communicate()
-  return out
+  return out.decode("utf8"), err.decode("utf8") # WARNING: the decode part is needed for Python 3
 
 def createScript(script, outputFileName):
   # creates a script file out of input script
@@ -93,7 +103,7 @@ def createScript(script, outputFileName):
   # output file name is outputFileName (will automatically overwrite existing!)
   # NOTE: no shebangs are included--put everything in script!
   file = open(outputFileName, "w")
-  if isinstance(script, basestring):
+  if isinstance(script, str): # WARNING: This will NOT work on Python 2! Need to change type to basestring
     file.write(script)
   elif isinstance(script, list):
     for line in script:

@@ -17,13 +17,13 @@ def writeKeyFile(G, outputFile, size=1, movingNodes=None, fixedNodes=None, cards
 	# write any optional cards at top of file
 	if cards != None and len(cards) != 0:
 		for card in cards:
-			file.write(card + "\n")
+			file.write(card)
 
 	# mesh the lattice
 	elements, allNodes = meshBeamEdges(G, size)
 
 	# write nodes
-	file.write("*NODES\n")
+	file.write("\n*NODES\n")
 	file.write("$#   nid               x               y               z      tc      rc\n")
 	writeNodes(file, allNodes)
 
@@ -41,6 +41,9 @@ def writeKeyFile(G, outputFile, size=1, movingNodes=None, fixedNodes=None, cards
 	file.write("*BOUNDARY_SPC_NODE\n")
 	file.write("$#     nid       cid      dofx      dofy      dofz     dofrx     dofry     dofrz\n")
 	writeSPC(file, fixedNodes)
+
+	# Write *END keyword
+	file.write("*END")
 
 	file.close()
 
@@ -131,7 +134,7 @@ def meshBeamEdges(G, size=1, eidStart=1, nidStart=None):
 	for n in list(G):
 		allNodes.append((n, G.node[n]["pos"][0], G.node[n]["pos"][1], G.node[n]["pos"][2]))
 	nextNode = nidStart
-	for e in G.edges:
+	for e in G.edges_iter(): # this is a networkx 1.11 statement; will need to change depending on version
 		edgeLength = float(getEdgeLength(G, e))
 		nElements = int(math.ceil(edgeLength/size)) # round up
 		elementLength = edgeLength/nElements
