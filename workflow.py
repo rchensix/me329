@@ -66,8 +66,10 @@ while(len(submittedJobs) != len(completedJobs)):
 			nodout = util.parseDynaNodout(directory + "nodout")
 			Fz = bndout[37][:,3]
 			uz = nodout[37][:,3]
+			plt.figure()
 			plt.plot(-uz, -Fz)
 			plt.savefig(directory + "load-displacement.png")
+			plt.close()
 	# print queue
 	print(sch.squeue()[0])
 	print(completedJobs)

@@ -35,7 +35,7 @@ def writeKeyFile(G, outputFile, size=1, movingNodes=None, fixedNodes=None, cards
 	# write prescribed velocity (moving nodes)
 	file.write("*BOUNDARY_PRESCRIBED_MOTION_NODE\n")
 	file.write("$#     nid       dof       vad      lcid        sf       vid     death     birth\n")
-	writePrescribedVelocity(file, movingNodes)
+	writePrescribedVelocity(file, movingNodes, dof=3)
 
 	# write spc boundary conditions (fixed nodes)
 	file.write("*BOUNDARY_SPC_NODE\n")
