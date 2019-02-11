@@ -1,8 +1,26 @@
 """
-xlattice version 1.1
+xlattice version 1.2
 Written by Ruiqi Chen (rchensix at stanford dot edu) and Lucas Zhou (zzh at stanford dot edu)
 February 11, 2019
 This module utilizes the networkx module to generate unit cell lattice structures
+
+NEW IN 1.2
+-Added Lattice class
+    -tessellation function
+    -automatically checks for periodicity and extracts faces
+    -assumes rectangular cuboid currently
+-Added translate function for NetworkX Graphs and Lattices
+-Modified network_plot_3D to be compabitible with Lattice class
+-Created new wrapper functions to wrap existing FCC, BCC, and snapThrough lattices in Lattice class
+-Add DeprecationWarning to old lattice generator functions that don't wrap in Lattice class
+-Add DeprecationWarning to print_to_file function (not used by dynautil anymore)
+
+NEW IN 1.1
+-Additional BCC lattice type added
+
+NEW IN 1.0
+-Initial release
+
 """
 from __future__ import division
 import matplotlib.pyplot as plt
@@ -203,6 +221,7 @@ def findPeriodicNodes(G, tol=1e-5):
     return [xPeriodic, yPeriodic, zPeriodic, xMinFace, xMaxFace, yMinFace, yMaxFace, zMinFace, zMaxFace, fullyPeriodic, extents]
 
 # Adopted from https://www.idtools.com.au/3d-network-graphs-python-mplot3d-toolkit/
+
 def network_plot_3D(G, elevation=30, angle=None):
 
     if isinstance(G, Lattice): G = G.G # make this function support plotting Lattice class directory
@@ -329,6 +348,10 @@ def snap_through_lattice(inclined_angle, edge_length, wall_height, wall_grid_siz
 
     return G, movingNodes, fixedNodes
 
+def snapThroughLattice(inclined_angle, edge_length, wall_height, wall_grid_size, both_side=False):
+    # uses the Lattice class instead
+    return Lattice(snap_through_lattice(inclined_angle, edge_length, wall_height, wall_grid_size, both_side)[0])
+
 ###################################################
 def generate_simple_cubic (width, depth, height):
     G = nx.Graph()
@@ -360,6 +383,10 @@ def generate_simple_cubic (width, depth, height):
     fixedNodes = [1, 2, 3, 4]
     
     return G, movingNodes, fixedNodes
+
+def simpleCubicLattice(width, depth, height):
+    # uses the Lattice class instead
+    return Lattice(generate_simple_cubic(width, depth, height)[0])
 
 ###################################################
 def generate_BCC (width, depth, height):
@@ -422,6 +449,14 @@ def generate_BCC_type2 (width, depth, height):
     fixedNodes = [1, 2, 3, 4]
     
     return G, movingNodes, fixedNodes
+
+def bccLatice(width, depth, height, type=1):
+    # uses the Lattice class instead and combines multiple BCC lattices
+    if type == 1:
+        return Lattice(generate_BCC(width, depth, height)[0])
+    elif type == 2:
+        return Lattice(generate_BCC_type2(width, depth, height)[0])
+
 ###################################################
 # open type FCC does not top center and bottom center nodes in a unit lattice
 def generate_FCC(width, depth, height, open_type=False):
@@ -475,9 +510,21 @@ def generate_FCC(width, depth, height, open_type=False):
     fixedNodes = [1, 2, 3, 4]
 
     return G, movingNodes, fixedNodes
+
+def fccLattice(width, depth, height, open_type=False):
+    # uses the lattice class instead
+    return Lattice(generate_FCC(width, depth, height, open_type)[0]) 
+
 ###########################################################
 
 def print_to_file(G, outputFile, movingNodes=None, fixedNodes=None):
+
+
+    # DEPRECATED!
+    # dynautil already handles this
+    msg = "The module dynautil can generate meshes without using this function!"
+    warnings.warn(msg, DeprecationWarning, stacklevel=2)
+
     # prints nodes and elements in format specified by Abhishek Tapadar (abhishektapadar at stanford dot edu)
     # G is a NetworkX graph object
     # outputFile is the name of the output file (can be just filename or a full path + name)
