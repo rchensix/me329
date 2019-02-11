@@ -31,6 +31,9 @@ import math
 import warnings
 import copy
 
+# This class builds upon a NetworkX graph and adds features for checking periodicity, 
+# determining periodic face nodes, and various utility methods like translation and tessellation
+
 class Lattice:
     def __init__(self, G, tol=1e-5):
         self.update(G, tol)
