@@ -1,8 +1,7 @@
 """
-xlattice version 1.0
+xlattice version 1.1
 Written by Ruiqi Chen (rchensix at stanford dot edu) and Lucas Zhou (zzh at stanford dot edu)
-February 4, 2019
-
+February 11, 2019
 This module utilizes the networkx module to generate unit cell lattice structures
 """
 from __future__ import division
@@ -11,9 +10,202 @@ import networkx as nx
 import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
 import math
+import warnings
+import copy
+
+class Lattice:
+    def __init__(self, G, tol=1e-5):
+        self.update(G, tol)
+
+    def update(self, G, tol=1e-5):
+        # update instance variable information
+        self.G = G
+        self.tol = tol
+        self.periodicInfo = findPeriodicNodes(G, tol)
+        self.xPeriodic = self.periodicInfo[0]
+        self.yPeriodic = self.periodicInfo[1]
+        self.zPeriodic = self.periodicInfo[2]
+        self.xMinFace = self.periodicInfo[3]
+        self.xMaxFace = self.periodicInfo[4]
+        self.yMinFace = self.periodicInfo[5]
+        self.yMaxFace = self.periodicInfo[6]
+        self.zMinFace = self.periodicInfo[7]
+        self.zMaxFace = self.periodicInfo[8]      
+        self.isFullyPeriodic = self.periodicInfo[9]
+        self.extents = self.periodicInfo[10]
+
+    def tessellate(self, nX, nY, nZ, inPlace=True):
+    # tessellates the current lattice in the x, y, and z directions into a nX*nY*nZ lattice
+    # nI=1 means don't tessellate along direction I
+    # nI must be < 0 for all directions I
+    # new lattices are always added on the +x, +y, and +z faces
+    # if inPlace is False, a newly tessellated copy of the original Lattice will be returned
+    # otherwise, the Lattice will be modified in place
+        assert(nX > 0 and nY > 0 and nZ > 0)
+
+        if not inPlace:
+            originalG = self.G.copy() # keep copy of original graph to rebuild later
+
+        def propagate(G, n, axis):
+            maxNodeNumber = max(list(G))
+            assert(axis == 0 or axis == 1 or axis == 2)
+            for i in range(n):
+                if i != 0:
+                    # determine which face nodes will be renamed
+                    if axis == 0:
+                        face = self.xMinFace
+                        periodic = self.xPeriodic
+                    elif axis == 1:
+                        face = self.yMinFace
+                        periodic = self.yPeriodic
+                    else:
+                        face = self.zMinFace
+                        periodic = self.zPeriodic
+                    # create new graph, translate in direction of axis
+                    translationDistance = i*(self.extents[2*axis + 1] - self.extents[2*axis])
+                    if axis == 0:
+                        newG = translate(self.G, translationDistance, 0, 0, inPlace=False)
+                    elif axis == 1:
+                        newG = translate(self.G, 0, translationDistance, 0, inPlace=False)
+                    else:
+                        newG = translate(self.G, 0, 0, translationDistance, inPlace=False)
+                    # rename all nodes in newG
+                    mapping = dict()
+                    for node in list(newG):
+                        if node in face:
+                            mapping[node] = periodic[node] + (i-1)*maxNodeNumber
+                        else:
+                            mapping[node] = node + i*maxNodeNumber
+                    nx.relabel.relabel_nodes(newG, mapping, copy=False)
+                    # merge graphs G and newG
+                    G = nx.algorithms.operators.binary.compose(G, newG)
+            return G
+
+        for axis in range(3):
+            if axis == 0: nA = nX
+            elif axis == 1: nA = nY
+            else: nA = nZ
+            G = self.G.copy()
+            G = propagate(G, nA, axis)
+            self.update(G, self.tol)
+
+        if not inPlace:
+            self.update(originalG, self.tol)
+            return Lattice(G, self.tol)
+
+    def translate(self, dx, dy, dz, inPlace=True):
+        result = translate(self.G, dx, dy, dz, inPlace)
+        if not inPlace:
+            return Lattice(result, self.tol)
+
+    def plot(self, elevation=30, azimuth=None):
+        network_plot_3D(self.G, elevation, azimuth)
+
+def translate(G, dx, dy, dz, inPlace=False):
+    # translates all nodes in a networkx graph by (dx, dy, dz)
+    if not inPlace:
+        G = G.copy()
+    for n in list(G):
+        x, y, z = G.nodes[n]["pos"]
+        G.nodes[n]["pos"] = (x + dx, y + dy, z + dz)
+    if not inPlace:
+        return G
+
+def findPeriodicNodes(G, tol=1e-5):
+    # Given a graph G representing a rectangular cuboid lattice, this function finds periodic nodes
+
+    # these sets store all periodic nodes
+    xMinFace = set()
+    xMaxFace = set()
+    yMinFace = set()
+    yMaxFace = set()
+    zMinFace = set()
+    zMaxFace = set()
+
+    # determine extents of the graph and which faces nodes are on
+    minX = float("inf")
+    maxX = float("-inf")
+    minY = float("inf")
+    maxY = float("-inf")
+    minZ = float("inf")
+    maxZ = float("-inf")
+    for n in list(G): # an iterator would be more efficient but there seems to be compatibility issues between NetworkX 1.1 and 2.2
+        x, y, z = G.nodes[n]["pos"] # position of current node n
+        # find the extents
+        # if extents are updated, the periodic dicts have to be cleared if out of tolerance
+        if x < minX:
+            if abs(x - minX) > tol:
+                xMinFace.clear()
+            minX = x
+        if x > maxX:
+            if abs(x - maxX) > tol:
+                xMaxFace.clear()
+            maxX = x
+        if y < minY:
+            if abs(y - minY) > tol:
+                yMinFace.clear()
+            minY = y
+        if y > maxY:
+            if abs(y - maxY) > tol:
+                yMaxFace.clear()
+            maxY = y            
+        if z < minZ:
+            if abs(z - minZ) > tol:
+                zMinFace.clear()
+            minZ = z            
+        if z > maxZ:
+            if abs(z - maxZ) > tol:                
+                zMaxFace.clear()
+            maxZ = z
+
+        # check if current node is equal to one of the extents
+        # if so, put into face set
+        # note: corner and edge nodes can be in multiple sets
+        if abs(x - minX) <= tol:
+            xMinFace.add(n)
+        if abs(x - maxX) <= tol:
+            xMaxFace.add(n)
+        if abs(y - minY) <= tol:
+            yMinFace.add(n)
+        if abs(y - maxY) <= tol:
+            yMaxFace.add(n)
+        if abs(z - minZ) <= tol:
+            zMinFace.add(n)
+        if abs(z - maxZ) <= tol:
+            zMaxFace.add(n)
+
+    fullyPeriodic = True
+    # Look at opposing faces and match up nodes
+    # Give a warning if a match cannot be found
+    def matchFaceNodes(face1, face2, axis):
+        # given two faces and axis (0-x, 1-y, 2-z), finds matching nodes with identical pos[i] where i is NOT axis
+        periodic = dict() # two way dict that stores periodicity information
+        axes = [0, 1, 2]
+        axes.remove(axis) # only search for matches along these two axes
+        for n1 in face1:
+            for n2 in face2:
+                if n2 not in periodic: # don't look at already assigned nodes
+                    if abs(G.nodes[n1]["pos"][axes[0]] - G.nodes[n2]["pos"][axes[0]]) <= tol:
+                        if abs(G.nodes[n1]["pos"][axes[1]] - G.nodes[n2]["pos"][axes[1]]) <= tol:
+                            periodic[n1] = n2
+                            periodic[n2] = n1
+            if n1 not in periodic:
+                msg = "Input graph is not periodic! Cannot match node " + str(n1) + "."
+                warnings.warn(msg)
+                fullyPeriodic = False
+        return periodic
+
+    xPeriodic = matchFaceNodes(xMinFace, xMaxFace, 0)
+    yPeriodic = matchFaceNodes(yMinFace, yMaxFace, 1)
+    zPeriodic = matchFaceNodes(zMinFace, zMaxFace, 2)
+    extents = (minX, maxX, minY, maxY, minZ, maxZ)
+
+    return [xPeriodic, yPeriodic, zPeriodic, xMinFace, xMaxFace, yMinFace, yMaxFace, zMinFace, zMaxFace, fullyPeriodic, extents]
 
 # Adopted from https://www.idtools.com.au/3d-network-graphs-python-mplot3d-toolkit/
-def network_plot_3D(G, angle):
+def network_plot_3D(G, elevation=30, angle=None):
+
+    if isinstance(G, Lattice): G = G.G # make this function support plotting Lattice class directory
 
     pos = nx.get_node_attributes(G, 'pos')
     n = G.number_of_nodes()
@@ -33,7 +225,7 @@ def network_plot_3D(G, angle):
             z = np.array((pos[j[0]][2], pos[j[1]][2]))
             ax.plot(x, y, z, c='black', alpha=0.5)
     
-    ax.view_init(30, angle)
+    ax.view_init(elevation, angle)
     #ax.set_axis_off()
 
     plt.show()
@@ -287,47 +479,47 @@ def generate_FCC(width, depth, height, open_type=False):
 
 def print_to_file(G, outputFile, movingNodes=None, fixedNodes=None):
     # prints nodes and elements in format specified by Abhishek Tapadar (abhishektapadar at stanford dot edu)
- 	# G is a NetworkX graph object
- 	# outputFile is the name of the output file (can be just filename or a full path + name)
- 	# optionally prints moving nodes and fixed nodes
+    # G is a NetworkX graph object
+    # outputFile is the name of the output file (can be just filename or a full path + name)
+    # optionally prints moving nodes and fixed nodes
 
- 	def writeNodesFormatted(nodes):
- 		for n in nodes:
- 			file.write(str(n) + " ")
- 			pos = G.node[n]["pos"]
- 			for i in range(len(pos)):
- 				file.write(str(pos[i]) + " ")
- 			file.write("\n")
+    def writeNodesFormatted(nodes):
+        for n in nodes:
+            file.write(str(n) + " ")
+            pos = G.node[n]["pos"]
+            for i in range(len(pos)):
+                file.write(str(pos[i]) + " ")
+            file.write("\n")
 
- 	def writeElementsFormatted(elements):
- 		for e in elements:
- 			if e[0] > e[1]:
- 				file.write(str(e[1]) + " " + str(e[0]) + " ")
- 			else:
- 				file.write(str(e[0]) + " " + str(e[1]) + " ")
- 			file.write("\n")
+    def writeElementsFormatted(elements):
+        for e in elements:
+            if e[0] > e[1]:
+                file.write(str(e[1]) + " " + str(e[0]) + " ")
+            else:
+                file.write(str(e[0]) + " " + str(e[1]) + " ")
+            file.write("\n")
 
 
- 	file = open(outputFile, "w")
- 	# sort nodes and output in ascending order
- 	file.write("NODES: NODE_ID X Y Z\n")
- 	nodes = sorted(list(G))
- 	writeNodesFormatted(nodes)
- 	
- 	# output elements (order does not matter) as (n1, n2) tuples where n1 < n2
- 	file.write("ELEMENTS: N1 N2\n")
- 	writeElementsFormatted(G.edges)
- 		
- 	# output moving nodes
- 	if movingNodes != None:
- 		file.write("MOVING NODES: NODE_ID X Y Z\n")
- 		movingNodes.sort()
- 		writeNodesFormatted(movingNodes)
+    file = open(outputFile, "w")
+    # sort nodes and output in ascending order
+    file.write("NODES: NODE_ID X Y Z\n")
+    nodes = sorted(list(G))
+    writeNodesFormatted(nodes)
+    
+    # output elements (order does not matter) as (n1, n2) tuples where n1 < n2
+    file.write("ELEMENTS: N1 N2\n")
+    writeElementsFormatted(G.edges)
+        
+    # output moving nodes
+    if movingNodes != None:
+        file.write("MOVING NODES: NODE_ID X Y Z\n")
+        movingNodes.sort()
+        writeNodesFormatted(movingNodes)
 
- 	# output fixed nodes
- 	if fixedNodes != None:
- 		file.write("FIXED NODES: NODE_ID X Y Z\n")
- 		fixedNodes.sort()
- 		writeNodesFormatted(fixedNodes)
+    # output fixed nodes
+    if fixedNodes != None:
+        file.write("FIXED NODES: NODE_ID X Y Z\n")
+        fixedNodes.sort()
+        writeNodesFormatted(fixedNodes)
 
- 	file.close()
+    file.close()
