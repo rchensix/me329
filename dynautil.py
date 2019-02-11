@@ -234,3 +234,96 @@ def importDynaCardsList(file):
 	cards.append(currentCard)
 	f.close()
 	return cards
+
+def objectiveFunction(array, target, start=None, stop=None, step=0.01):
+	# evaluates how "close" array and target are
+	# array and target must both be two column ndarrays of any number of rows
+	# first column is x, second column is y
+	# first column must be in monotonically ascending order
+	# start and stop are x values that define the domain
+	# if start or stop are not provided, the most restrictive domain will be used
+	# objective function is 1/nSteps*sum(|array(i)-target(i)|) for every point i defined by step size
+	# linear interpolation will be used for intermediate points
+
+	assert(step > 0)
+	assert(array.shape[1] == 2)
+	assert(target.shape[1] == 2)
+
+	# determine domain
+	minStartValue = max(array[0, 0], target[0, 0]) # min start value that user can specify
+	maxStopValue = min(array[-1, 0], target[-1, 0]) # max stop value that user can specify
+	if start != None:
+		assert(start >= minStartValue)
+	if stop != None:
+		assert(stop <= maxStopValue)
+	if start == None:
+		start = minStartValue
+	if stop == None:
+		stop = maxStopValue
+
+	assert(start <= stop)
+	assert(stop - start >= step)
+
+	# linearly interpolate both arrays
+	arrayInterpolated = interpolateArray(array, start, stop, step)
+	targetInterpolated = interpolateArray(target, start, stop, step)
+
+	# calculate objective function (loss function)
+	numSteps = int((stop - start)/float(step)) + 1
+	return 1/float(numSteps)*np.sum(np.abs(arrayInterpolated[:, 1] - targetInterpolated[:, 1]))
+
+# linearly interpolate an array within domain given by begin, end, and step
+def interpolateArray(arr, begin, end, step):
+	assert(step <= end - begin)
+	assert(step > 0)
+	assert(arr[0, 0] <= begin)
+	assert(arr[-1, 0] >= end)
+	numSteps = int((end - begin)/float(step)) + 1
+	result = np.zeros((numSteps, 2))
+	for i in range(numSteps):
+		x = begin + i*step
+		result[i, 0] = x
+		# find points bounding x
+		# search left to right to find upper bound
+		# start from upper bound and search right to left to find lower bound
+		x0 = None
+		y0 = None
+		x1 = None
+		y1 = None
+		index1 = None
+		for j in range(arr.shape[0]):
+			if arr[j, 0] >= x: # upper bound found
+				x1 = arr[j, 0]
+				y1 = arr[j, 1]
+				index1 = j
+				break
+		for j in range(index1, -1, -1):
+			if arr[j, 0] <= x: # lower found bound
+				x0 = arr[j, 0]
+				y0 = arr[j, 1]
+				break
+		result[i, 1] = linearInterpolate(x0, y0, x1, y1, x)
+	return result		
+
+def linearInterpolate(x0, y0, x1, y1, x):
+	# given points (x0, y0) and (x1, y1) and point x, linearly interpolate to find y
+	# x must lie between the two given x coordinates
+
+	if x0 == x1:
+		return (y1 + y0)/float(2)
+
+	# determine order of points
+	if x0 < x1:
+		X0 = x0
+		Y0 = y0
+		X1 = x1
+		Y1 = y1
+	else:
+		X0 = x1
+		Y0 = y1
+		X1 = x0
+		Y1 = y0
+
+	# apply linear interpolation formula
+	y = Y0 + (x - X0)*(Y1 - Y0)/(X1 - X0)
+	return y
