@@ -26,5 +26,3 @@ def tessellationExample():
 	# Unlike the single sided version, the double sided snap-through lattice is periodic in x, y, and z!
 	doubleSnap.tessellate(2, 3, 2)
 	doubleSnap.plot()
-
-tessellationExample()
