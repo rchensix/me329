@@ -1,5 +1,5 @@
 """
-xlattice version 1.3
+xlattice version 1.4
 Written by Ruiqi Chen (rchensix at stanford dot edu) and Lucas Zhou (zzh at stanford dot edu)
 February 12, 2019
 This module utilizes the networkx module to generate unit cell lattice structures
@@ -12,6 +12,9 @@ SUMMARY OF LATTICE TYPES (AS OF VERSION 1.3)
 -FCC (close-type and open-type)
 -Regular Hexagon
 -Diamond Lattice
+
+NEW IN 1.4
+-Fixed bug in diamond lattice family
 
 NEW IN 1.3
 -Added double_snap_through_lattice type, a variant from sanp_through. This one has two layers of snap-through feature.
@@ -630,9 +633,21 @@ def diamond_lattice (width, depth, height):
         else:
             j = rev_all_pos.get((x-width/4, y+depth/4, z+height/4))
             G.add_edge(i, j)
-            
+
+    # add missing 4 lone corner nodes
+    node_count += 1
+    G.add_node(node_count, pos=(width, 0, 0))
+    node_count += 1
+    G.add_node(node_count, pos=(0, depth, 0))
+    node_count += 1
+    G.add_node(node_count, pos=(0, 0, height))
+    node_count += 1
+    G.add_node(node_count, pos=(width, depth, height))
+
     return G
 
+def diamondLattice(width, depth, height):
+    return Lattice(diamond_lattice(width, depth, height))
 
 ###########################################################
 

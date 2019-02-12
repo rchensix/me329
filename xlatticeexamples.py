@@ -34,4 +34,10 @@ def honeycombTessellation(sideLength=1, height=1):
 	hexagonLattice.tessellate(6, 6, 2)
 	hexagonLattice.plot()
 
-honeycombTessellation()
+def diamondTessellation(width=1, depth=1, height=1):
+	diamondLattice = xlt.diamondLattice(width, depth, height)
+	diamondLattice.plot()
+	diamondLattice.tessellate(4, 3, 2)
+	diamondLattice.plot()
+
+diamondTessellation(1, 1, 1)
