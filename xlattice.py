@@ -1,7 +1,7 @@
 """
 xlattice version 1.3
 Written by Ruiqi Chen (rchensix at stanford dot edu) and Lucas Zhou (zzh at stanford dot edu)
-February 11, 2019
+February 12, 2019
 This module utilizes the networkx module to generate unit cell lattice structures
 
 SUMMARY OF LATTICE TYPES (AS OF VERSION 1.3)
@@ -11,9 +11,11 @@ SUMMARY OF LATTICE TYPES (AS OF VERSION 1.3)
 -BCC (type 1 and type 2)
 -FCC (close-type and open-type)
 -Regular Hexagon
+-Diamond Lattice
 
 NEW IN 1.3
 -Added double_snap_through_lattice type, a variant from sanp_through. This one has two layers of snap-through feature.
+-Added diamond lattice family
 -Added a summary of lattice as an index in the comment section
 
 NEW IN 1.2
@@ -581,6 +583,56 @@ def regularHexagonLattice(sideLength, height):
     G.nodes[13]["pos"] = (1.5*sideLength, 0, height)
     G.nodes[14]["pos"] = (3*sideLength, sideLength*math.sqrt(3)/2, height)
     return Lattice(G)
+
+###########################################################
+
+
+def diamond_lattice (width, depth, height):
+    G = nx.Graph()
+    node_count = 1
+    G.add_node(node_count, pos=(width/4, depth/4, height/4))
+    node_count += 1
+    G.add_node(node_count, pos=(width*3/4, depth*3/4, height/4))
+    node_count += 1
+    G.add_node(node_count, pos=(width*3/4, depth/4, height*3/4))
+    node_count += 1
+    G.add_node(node_count, pos=(width/4, depth*3/4, height*3/4))
+    
+    for i in np.arange(1,5):
+        all_pos = nx.get_node_attributes(G,'pos').values()
+        rev_all_pos = dict((v,k) for k, v in nx.get_node_attributes(G,'pos').items())
+        (x,y,z) = G.nodes[i]["pos"]
+        if (x-width/4, y-depth/4, z-height/4) not in all_pos:
+            node_count += 1
+            G.add_node(node_count, pos=(x-width/4, y-depth/4, z-height/4))
+            G.add_edge(i, node_count)
+        else:
+            j = rev_all_pos.get((x-width/4, y-depth/4, z-height/4))
+            G.add_edge(i, j)
+        if (x+width/4, y+depth/4, z-height/4) not in all_pos:
+            node_count += 1
+            G.add_node(node_count, pos=(x+width/4, y+depth/4, z-height/4))
+            G.add_edge(i, node_count)
+        else:
+            j = rev_all_pos.get((x+width/4, y+depth/4, z-height/4))
+            G.add_edge(i, j)
+        if (x+width/4, y-depth/4, z+height/4) not in all_pos:
+            node_count += 1
+            G.add_node(node_count, pos=(x+width/4, y-depth/4, z+height/4))
+            G.add_edge(i, node_count)
+        else:
+            j = rev_all_pos.get((x+width/4, y-depth/4, z+height/4))
+            G.add_edge(i, j)
+        if (x-width/4, y+depth/4, z+height/4) not in all_pos:
+            node_count += 1
+            G.add_node(node_count, pos=(x-width/4, y+depth/4, z+height/4))
+            G.add_edge(i, node_count)
+        else:
+            j = rev_all_pos.get((x-width/4, y+depth/4, z+height/4))
+            G.add_edge(i, j)
+            
+    return G
+
 
 ###########################################################
 
