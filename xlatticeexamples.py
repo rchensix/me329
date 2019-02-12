@@ -39,5 +39,3 @@ def diamondTessellation(width=1, depth=1, height=1):
 	diamondLattice.plot()
 	diamondLattice.tessellate(4, 3, 2)
 	diamondLattice.plot()
-
-diamondTessellation(1, 1, 1)
