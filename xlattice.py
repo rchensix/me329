@@ -1,8 +1,20 @@
 """
-xlattice version 1.2
+xlattice version 1.3
 Written by Ruiqi Chen (rchensix at stanford dot edu) and Lucas Zhou (zzh at stanford dot edu)
 February 11, 2019
 This module utilizes the networkx module to generate unit cell lattice structures
+
+SUMMARY OF LATTICE TYPES (AS OF VERSION 1.3)
+-Sanp Through Lattice (single-sided and double-sided)
+-Doube Sanp Through Lattice (single-sided and double-sided)
+-Simple Cubic 
+-BCC (type 1 and type 2)
+-FCC (close-type and open-type)
+-Regular Hexagon
+
+NEW IN 1.3
+-Added double_snap_through_lattice type, a variant from sanp_through. This one has two layers of snap-through feature.
+-Added a summary of lattice as an index in the comment section
 
 NEW IN 1.2
 -Added Lattice class
@@ -337,15 +349,15 @@ def snap_through_lattice(inclined_angle, edge_length, wall_height, wall_grid_siz
         bottom_node = node_count
         for jj in np.arange(4):
             G.add_edge(node_count, 1 + wall_grid_size[1]*jj)         
-        print('Nodes under load: ', top_node,' and ', bottom_node)
+        # print('Nodes under load: ', top_node,' and ', bottom_node)
         movingNodes.append(bottom_node)
-    else:
-        print('Nodes under load: ', top_node)
+    # else:
+    #     print('Nodes under load: ', top_node)
     
     
     temp3 = wall_grid_size[0]*node_each_layer
-    print('Nodes being fixed: ', 1, 1+wall_grid_size[1],1+wall_grid_size[1]*2, 1+wall_grid_size[1]*3,
-         1+temp3, 1+temp3+wall_grid_size[1],1+temp3+wall_grid_size[1]*2, 1+temp3+wall_grid_size[1]*3, '\n')
+    # print('Nodes being fixed: ', 1, 1+wall_grid_size[1],1+wall_grid_size[1]*2, 1+wall_grid_size[1]*3,
+    #      1+temp3, 1+temp3+wall_grid_size[1],1+temp3+wall_grid_size[1]*2, 1+temp3+wall_grid_size[1]*3, '\n')
 
     fixedNodes = [1, 1+wall_grid_size[1],1+wall_grid_size[1]*2, 1+wall_grid_size[1]*3,
          1+temp3, 1+temp3+wall_grid_size[1],1+temp3+wall_grid_size[1]*2, 1+temp3+wall_grid_size[1]*3]
@@ -355,6 +367,35 @@ def snap_through_lattice(inclined_angle, edge_length, wall_height, wall_grid_siz
 def snapThroughLattice(inclined_angle, edge_length, wall_height, wall_grid_size, both_side=False):
     # uses the Lattice class instead
     return Lattice(snap_through_lattice(inclined_angle, edge_length, wall_height, wall_grid_size, both_side)[0])
+
+###################################################
+# Another variant from snap_through_lattice. 
+
+def double_snap_through_lattice(inclined_angle1, inclined_angle2, edge_length, wall_height, wall_grid_size, both_side=False):
+    G, movingNodes, fixedNodes = snap_through_lattice(inclined_angle1,edge_length,wall_height,wall_grid_size, both_side)
+    node_each_layer = wall_grid_size[1]*4
+    node_count = list(G.nodes())[-1] +1
+    top_node_z2 = math.tan(math.pi*(inclined_angle2/180)) * math.sqrt(2) / 2 * edge_length + wall_height
+    G.add_node(node_count, pos=(edge_length/2, edge_length/2, top_node_z2))
+    
+    if not both_side:
+        for j in np.arange(4):
+            G.add_edge(node_count, node_count-1-node_each_layer+wall_grid_size[1]*j)
+        G.add_edge(node_count, node_count-1)
+        movingNodes = [node_count]
+    else:  
+        bottom_node_z2 = -math.tan(math.pi*(inclined_angle2/180)) * math.sqrt(2) / 2 * edge_length
+        node_count += 1
+        G.add_node(node_count, pos=(edge_length/2, edge_length/2, -top_node_z2))
+        for j in np.arange(4):
+            G.add_edge(node_count-1, node_count-3-node_each_layer+wall_grid_size[1]*j)
+            G.add_edge(node_count, wall_grid_size[1]*j+1)
+        G.add_edge(node_count, node_count-2)
+        G.add_edge(node_count-1, node_count-3)
+        movingNodes = [node_count, node_count-1]
+        
+    return G, movingNodes, fixedNodes
+
 
 ###################################################
 def generate_simple_cubic (width, depth, height):
