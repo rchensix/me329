@@ -14,6 +14,7 @@ NEW IN 1.2
 -Created new wrapper functions to wrap existing FCC, BCC, and snapThrough lattices in Lattice class
 -Add DeprecationWarning to old lattice generator functions that don't wrap in Lattice class
 -Add DeprecationWarning to print_to_file function (not used by dynautil anymore)
+-Added regular hexagon lattice
 
 NEW IN 1.1
 -Additional BCC lattice type added
@@ -517,6 +518,28 @@ def generate_FCC(width, depth, height, open_type=False):
 def fccLattice(width, depth, height, open_type=False):
     # uses the lattice class instead
     return Lattice(generate_FCC(width, depth, height, open_type)[0]) 
+
+###########################################################
+
+def regularHexagonLattice(sideLength, height):
+    G = nx.Graph([(1, 2), (2, 3), (3, 4), (4, 5), (5, 6), (6, 1), (5, 7), 
+        (8, 9), (9, 10), (10, 11), (11, 12), (12, 13), (13, 8), (12, 14),
+        (1, 8), (2, 9), (3, 10), (4, 11), (5, 12), (6, 13), (7, 14)])
+    G.nodes[1]["pos"] = (sideLength/2, 0, 0)
+    G.nodes[2]["pos"] = (0, sideLength*math.sqrt(3)/2, 0)
+    G.nodes[3]["pos"] = (0.5*sideLength, sideLength*math.sqrt(3), 0)
+    G.nodes[4]["pos"] = (1.5*sideLength, sideLength*math.sqrt(3), 0)
+    G.nodes[5]["pos"] = (2*sideLength, sideLength*math.sqrt(3)/2, 0)
+    G.nodes[6]["pos"] = (1.5*sideLength, 0, 0)
+    G.nodes[7]["pos"] = (3*sideLength, sideLength*math.sqrt(3)/2, 0)
+    G.nodes[8]["pos"] = (sideLength/2, 0, height)
+    G.nodes[9]["pos"] = (0, sideLength*math.sqrt(3)/2, height)
+    G.nodes[10]["pos"] = (0.5*sideLength, sideLength*math.sqrt(3), height)
+    G.nodes[11]["pos"] = (1.5*sideLength, sideLength*math.sqrt(3), height)
+    G.nodes[12]["pos"] = (2*sideLength, sideLength*math.sqrt(3)/2, height)
+    G.nodes[13]["pos"] = (1.5*sideLength, 0, height)
+    G.nodes[14]["pos"] = (3*sideLength, sideLength*math.sqrt(3)/2, height)
+    return Lattice(G)
 
 ###########################################################
 

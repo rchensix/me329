@@ -7,6 +7,7 @@ This module contains a set of examples using the xlattice module
 """
 
 import xlattice as xlt
+import networkx as nx
 
 ### TESSELLATIONS ###
 def tessellationExample():
@@ -26,3 +27,11 @@ def tessellationExample():
 	# Unlike the single sided version, the double sided snap-through lattice is periodic in x, y, and z!
 	doubleSnap.tessellate(2, 3, 2)
 	doubleSnap.plot()
+
+def honeycombTessellation(sideLength=1, height=1):
+	hexagonLattice = xlt.regularHexagonLattice(sideLength, height)
+	hexagonLattice.plot()
+	hexagonLattice.tessellate(6, 6, 2)
+	hexagonLattice.plot()
+
+honeycombTessellation()
