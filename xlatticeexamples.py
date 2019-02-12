@@ -10,7 +10,7 @@ import xlattice as xlt
 import networkx as nx
 
 ### TESSELLATIONS ###
-def tessellationExample():
+def snapThroughTessellation():
 	# Create a single sided snap-through lattice 
 	snap = xlt.snapThroughLattice(30, 1, 0.1, (1, 1), both_side=False)
 	snap.plot()
@@ -39,3 +39,19 @@ def diamondTessellation(width=1, depth=1, height=1):
 	diamondLattice.plot()
 	diamondLattice.tessellate(4, 3, 2)
 	diamondLattice.plot()
+
+def triangleTessellation(sideLength=1, thickness=0.1):
+	triangleLattice = xlt.regularTriangleLattice(sideLength, thickness)
+	triangleLattice.plot()
+	triangleLattice.tessellate(1, 2, 1)
+	triangleLattice.plot()
+
+def doubleSnapThroughTessellation():
+	dsnap = xlt.doubleSnapThroughLattice(10, 25, 1, 0.1, (1,1), False)
+	dsnap.plot()
+	dsnap.tessellate(2,2,1)
+	dsnap.plot()
+	dsnap2 = xlt.doubleSnapThroughLattice(10, 25, 1, 0.1, (1,1), True)
+	dsnap2.plot()
+	dsnap2.tessellate(2,2,2)
+	dsnap2.plot()

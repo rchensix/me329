@@ -6,15 +6,18 @@ This module utilizes the networkx module to generate unit cell lattice structure
 
 SUMMARY OF LATTICE TYPES (AS OF VERSION 1.3)
 -Sanp Through Lattice (single-sided and double-sided)
--Doube Sanp Through Lattice (single-sided and double-sided)
+-Double Snap Through Lattice (single-sided and double-sided)
 -Simple Cubic 
 -BCC (type 1 and type 2)
 -FCC (close-type and open-type)
 -Regular Hexagon
 -Diamond Lattice
+-Regular Triangle
 
 NEW IN 1.4
 -Fixed bug in diamond lattice family
+-Added regular triangle lattice family
+-Modified network_plot_3D to plot using equal aspect ratio (or close enough since it's not officially supported by MPlot3D) given extents
 
 NEW IN 1.3
 -Added double_snap_through_lattice type, a variant from sanp_through. This one has two layers of snap-through feature.
@@ -138,7 +141,7 @@ class Lattice:
             return Lattice(result, self.tol)
 
     def plot(self, elevation=30, azimuth=None):
-        network_plot_3D(self.G, elevation, azimuth)
+        network_plot_3D(self.G, elevation, azimuth, self.extents)
 
 def translate(G, dx, dy, dz, inPlace=False):
     # translates all nodes in a networkx graph by (dx, dy, dz)
@@ -243,9 +246,11 @@ def findPeriodicNodes(G, tol=1e-5):
 
 # Adopted from https://www.idtools.com.au/3d-network-graphs-python-mplot3d-toolkit/
 
-def network_plot_3D(G, elevation=30, angle=None):
+def network_plot_3D(G, elevation=30, angle=None, extents=None):
 
-    if isinstance(G, Lattice): G = G.G # make this function support plotting Lattice class directory
+    if isinstance(G, Lattice): 
+        extents = G.extents
+        G = G.G # make this function support plotting Lattice class directory
 
     pos = nx.get_node_attributes(G, 'pos')
     n = G.number_of_nodes()
@@ -267,6 +272,10 @@ def network_plot_3D(G, elevation=30, angle=None):
     
     ax.view_init(elevation, angle)
     #ax.set_axis_off()
+
+    if extents != None:
+        maxLength = max([extents[1] - extents[0], extents[3] - extents[2], extents[5] - extents[4]])
+        ax.auto_scale_xyz([extents[0], extents[0] + maxLength], [extents[2], extents[2] + maxLength], [extents[4], extents[4] + maxLength])
 
     plt.show()
     return
@@ -400,6 +409,10 @@ def double_snap_through_lattice(inclined_angle1, inclined_angle2, edge_length, w
         movingNodes = [node_count, node_count-1]
         
     return G, movingNodes, fixedNodes
+
+def doubleSnapThroughLattice(inclined_angle1, inclined_angle2, edge_length, wall_height, wall_grid_size, both_side=False):
+    # Wraps in Lattice class
+    return Lattice(double_snap_through_lattice(inclined_angle1, inclined_angle2, edge_length, wall_height, wall_grid_size, both_side)[0])
 
 
 ###################################################
@@ -647,7 +660,139 @@ def diamond_lattice (width, depth, height):
     return G
 
 def diamondLattice(width, depth, height):
+    # wraps NetworkX Graph in Lattice class
     return Lattice(diamond_lattice(width, depth, height))
+
+def regularTriangleLattice(sideLength=1, diameter=None):
+    # if diameter is specified, an edge attribute "diameter" will be added to all edges
+
+    G = nx.Graph()
+
+    # bottom layer
+    G.add_node(1, pos=(0, 0, 0))
+    G.add_node(2, pos=(0, sideLength, 0))
+    G.add_node(3, pos=(math.sqrt(3)/2*sideLength, sideLength, 0))
+    G.add_node(4, pos=(math.sqrt(3)*sideLength, sideLength, 0))
+    G.add_node(5, pos=(math.sqrt(3)*sideLength, 0, 0))
+    G.add_node(6, pos=(math.sqrt(3)/2*sideLength, 0, 0))
+    G.add_node(7, pos=(math.sqrt(3)/2*sideLength, sideLength/2, 0))
+
+    # middle layer
+    h1 = math.sqrt(6)/3*sideLength
+    G.add_node(8, pos=(0, sideLength/3, h1))
+    G.add_node(9, pos=(0, 2/3*sideLength, h1))
+    G.add_node(10, pos=(math.sqrt(3)/6*sideLength, sideLength, h1))
+    G.add_node(11, pos=(2*math.sqrt(3)/3*sideLength, sideLength, h1))
+    G.add_node(12, pos=(math.sqrt(3)*sideLength, 2/3*sideLength, h1))
+    G.add_node(13, pos=(math.sqrt(3)*sideLength, sideLength/3, h1))
+    G.add_node(14, pos=(2*math.sqrt(3)/3*sideLength, 0, h1))
+    G.add_node(15, pos=(math.sqrt(3)/6*sideLength, 0, h1))
+    G.add_node(16, pos=(math.sqrt(3)/6*sideLength, sideLength/2, h1))
+
+    # upper layer
+    h2 = 2*h1
+    G.add_node(17, pos=(0, sideLength/3, h2))
+    G.add_node(18, pos=(0, 2/3*sideLength, h2))
+    G.add_node(19, pos=(math.sqrt(3)/3*sideLength, sideLength, h2))
+    G.add_node(20, pos=(5*math.sqrt(3)/6*sideLength, sideLength, h2))
+    G.add_node(21, pos=(math.sqrt(3)*sideLength, 2/3*sideLength, h2))
+    G.add_node(22, pos=(math.sqrt(3)*sideLength, sideLength/3, h2))
+    G.add_node(23, pos=(5*math.sqrt(3)/6*sideLength, 0, h2))
+    G.add_node(24, pos=(math.sqrt(3)/3*sideLength, 0, h2))
+    G.add_node(25, pos=(5*math.sqrt(3)/6*sideLength, sideLength/2, h2))
+
+    # top layer - repeat bottom layer for periodicity
+    h3 = 3*h1
+    G.add_node(26, pos=(0, 0, h3))
+    G.add_node(27, pos=(0, sideLength, h3))
+    G.add_node(28, pos=(math.sqrt(3)/2*sideLength, sideLength, h3))
+    G.add_node(29, pos=(math.sqrt(3)*sideLength, sideLength, h3))
+    G.add_node(30, pos=(math.sqrt(3)*sideLength, 0, h3))
+    G.add_node(31, pos=(math.sqrt(3)/2*sideLength, 0, h3))
+    G.add_node(32, pos=(math.sqrt(3)/2*sideLength, sideLength/2, h3))
+
+    # two additional weird nodes on +y/-y faces connecting middle and upper layers
+    G.add_node(33, pos=(0, sideLength/2, 1.5*h1))
+    G.add_node(34, pos=(math.sqrt(3)*sideLength, sideLength/2, 1.5*h1))
+
+    def addEdge(n1, n2):
+        if diameter == None:
+            G.add_edge(n1, n2)
+        else:
+            G.add_edge(n1, n2, diameter=diameter)
+
+    # bottom to bottom edges
+    addEdge(1, 2)
+    addEdge(4, 5)
+    addEdge(1, 7)
+    addEdge(2, 7)
+    addEdge(3, 7)
+    addEdge(4, 7)
+    addEdge(5, 7)
+    addEdge(6, 7)
+
+    # bottom to middle edges
+    addEdge(1, 16)
+    addEdge(2, 16)
+    addEdge(7, 16)
+    addEdge(11, 7)
+    addEdge(11, 4)
+    addEdge(14, 7)
+    addEdge(14, 5)
+
+    # middle to middle edges
+    addEdge(16, 8)
+    addEdge(16, 9)
+    addEdge(16, 10)
+    addEdge(16, 11)
+    addEdge(16, 14)
+    addEdge(16, 15)
+    addEdge(11, 14)
+    addEdge(11, 12)
+    addEdge(13, 14)
+
+    # middle to upper edges
+    addEdge(19, 16)
+    addEdge(19, 11)
+    addEdge(24, 16)
+    addEdge(24, 14)
+    addEdge(25, 11)
+    addEdge(25, 14)
+    # connect weird nodes
+    addEdge(33, 16)
+    addEdge(34, 25)
+
+    # upper to upper edges
+    addEdge(18, 19)
+    addEdge(19, 24)
+    addEdge(19, 25)
+    addEdge(24, 25)
+    addEdge(24, 17)
+    addEdge(25, 20)
+    addEdge(25, 21)
+    addEdge(25, 22)
+    addEdge(25, 23)
+
+    # upper to top edges
+    addEdge(32, 19)
+    addEdge(32, 24)
+    addEdge(32, 25)
+    addEdge(26, 24)
+    addEdge(27, 19)
+    addEdge(29, 25)
+    addEdge(30, 25)
+
+    # top to top
+    addEdge(26, 27)
+    addEdge(29, 30)
+    addEdge(26, 32)
+    addEdge(27, 32)
+    addEdge(28, 32)
+    addEdge(29, 32)
+    addEdge(30, 32)
+    addEdge(31, 32)
+
+    return Lattice(G)
 
 ###########################################################
 
