@@ -4,13 +4,68 @@
 
 import math
 import networkx
+import xlattice as xlt
 import numpy as np
+import warnings
+
+def generateKeyFile(lattice, outputFile, elementSize=1, defaultDiameter=0.1, movingNodes=None, fixedNodes=None, cards=None):
+	# Creates a LS-Dyna outputFile.k file using provided lattice
+	# movingNodes and fixedNodes can be a list or set of nodeIDs
+	# if left None, the zMaxFace and zMinFace will be used as moving and fixed, respectively
+
+	file = open(outputFile, "w")
+
+	# write any optional cards at top of file
+	if cards != None and len(cards) != 0:
+		for card in cards:
+			file.write(card)
+
+	# mesh the lattice
+	elements, allNodes = meshBeamEdges(lattice.G, size=elementSize, diameterFlag=True, defaultDiameter=defaultDiameter)
+
+	# write nodes
+	file.write("\n*NODES\n")
+	file.write("$#   nid               x               y               z      tc      rc\n")
+	writeNodes(file, allNodes)
+
+	# write elements
+	file.write("*ELEMENT_BEAM_THICKNESS\n")
+	file.write("$#   eid     pid      n1      n2      n3     rt1     rr1     rt2     rr2   local\n")
+	file.write("$#         parm1           parm2           parm3           parm4           parm5\n")
+	writeThickElements(file, elements)
+
+	# write prescribed velocity (moving nodes)
+	if movingNodes == None:
+		movingNodes = lattice.zMaxFace
+
+	file.write("*BOUNDARY_PRESCRIBED_MOTION_NODE\n")
+	file.write("$#     nid       dof       vad      lcid        sf       vid     death     birth\n")
+	writePrescribedVelocity(file, movingNodes, dof=3)
+
+	# write spc boundary conditions (fixed nodes)
+	if fixedNodes == None:
+		fixedNodes = lattice.zMinFace
+	file.write("*BOUNDARY_SPC_NODE\n")
+	file.write("$#     nid       cid      dofx      dofy      dofz     dofrx     dofry     dofrz\n")
+	writeSPC(file, fixedNodes)
+
+	# Write *END keyword
+	file.write("*END")
+
+	file.close()
 
 def writeKeyFile(G, outputFile, size=1, movingNodes=None, fixedNodes=None, cards=None):
+
+	### SUPERCEDED by generateKeyFile, which supports variable thickness beams
+	msg = "The function writeKeyFile is being depreciated. The function generateKeyFile should be used in the future as it supports variable beam diameters."
+	warnings.warn(msg, DeprecationWarning, stacklevel=2)
+
 	# Creates a LS-Dyna outputFile.k file with elements found in lattice G, 
 	# predefined velocity conditions on movingNodes, spc boundary conditions on fixedNodes,
 	# and appends any additional inputcards at the end
 	# cards is a list of strings
+	if isinstance(G, Lattice):
+		G = G.G
 	
 	file = open(outputFile, "w")
 
@@ -122,19 +177,48 @@ def writeElements(openedFile, elements, header=None):
 		openedFile.write(setLengthStr(2, 8)) # local
 		openedFile.write("\n")
 
-def meshBeamEdges(G, size=1, eidStart=1, nidStart=None):
+def writeThickElements(openedFile, elements, header=None):
+	if header != None:
+		openedFile.write(header + "\n")
+	for e in elements:
+		eid, pid, n1, n2, diameter = e
+		openedFile.write(setLengthStr(eid, 8))
+		openedFile.write(setLengthStr(pid, 8))
+		openedFile.write(setLengthStr(n1, 8))
+		openedFile.write(setLengthStr(n2, 8))
+		openedFile.write(setLengthStr(0, 8)) # n3
+		openedFile.write(setLengthStr(0, 8)) # rt1
+		openedFile.write(setLengthStr(0, 8)) # rr1
+		openedFile.write(setLengthStr(0, 8)) # rt2
+		openedFile.write(setLengthStr(0, 8)) # rr2
+		openedFile.write(setLengthStr(2, 8)) # local
+		openedFile.write("\n")
+		openedFile.write(setLengthStr(diameter, 16)) # outer diameter (OD) at n1
+		openedFile.write(setLengthStr(diameter, 16)) # OD at n2
+		openedFile.write(setLengthStr(diameter, 0)) # inner diameter (ID) at n1
+		openedFile.write(setLengthStr(diameter, 0)) # ID at n2
+		openedFile.write(setLengthStr(diameter, 0)) # not used; put a 0 here
+		openedFile.write("\n")
+
+def meshBeamEdges(G, size=1, eidStart=1, nidStart=None, diameterFlag=False, defaultDiameter=None):
 	# meshes all edges in G with elements of size size
 	# assigns element numbers in order starting from eidStart (default = 1)
 	# creates extra nodes starting from nidStart (if set to None, will start at numberNodesInG + 1)
 	# if size > edge, then the entire edge will be one element
 	if nidStart == None:
-		nidStart = networkx.classes.function.number_of_nodes(G) + 1
+		nidStart = max(list(G)) + 1
 	elements = list()
 	allNodes = list()
 	for n in list(G):
 		allNodes.append((n, G.node[n]["pos"][0], G.node[n]["pos"][1], G.node[n]["pos"][2]))
 	nextNode = nidStart
-	for e in G.edges_iter(): # this is a networkx 1.11 statement; will need to change depending on version
+	if networkx.__version__ == "1.11":
+		iterObj = G.edges_iter()
+	elif networkx.__version__ == "2.2":
+		iterObj = G.edges
+	else:
+		raise Exception("Unsupported version of NetworkX! You must have 1.11 or 2.2!")
+	for e in iterObj: # this is a networkx 1.11 statement; will need to change depending on version
 		edgeLength = float(getEdgeLength(G, e))
 		nElements = int(math.ceil(edgeLength/size)) # round up
 		elementLength = edgeLength/nElements
@@ -154,7 +238,13 @@ def meshBeamEdges(G, size=1, eidStart=1, nidStart=None):
 				y = y0 + unitv[1]*elementLength*(i+1)
 				z = z0 + unitv[2]*elementLength*(i+1)
 				allNodes.append((nid, x, y, z))
-			elements.append((eidStart, 1, prevNode, nid)) # assumes pid = 1
+			if diameterFlag:
+				if "diameter" in G.edges[e]:
+					diameter = G.edges[e]["diameter"]
+				else:
+					diameter = defaultDiameter
+				elements.append((eidStart, 1, prevNode, nid, diameter))
+			else: elements.append((eidStart, 1, prevNode, nid)) # assumes pid = 1
 			prevNode = nid
 			eidStart += 1
 	return elements, allNodes
