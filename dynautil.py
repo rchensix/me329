@@ -8,10 +8,11 @@ import xlattice as xlt
 import numpy as np
 import warnings
 
-def generateKeyFile(lattice, outputFile, elementSize=1, defaultDiameter=0.1, movingNodes=None, fixedNodes=None, cards=None):
+def generateKeyFile(lattice, outputFile, elementSize=1, defaultDiameter=0.1, movingNodes=None, fixedNodes=None, SPCNodesAndDOF=None, cards=None):
 	# Creates a LS-Dyna outputFile.k file using provided lattice
 	# movingNodes and fixedNodes can be a list or set of nodeIDs
 	# if left None, the zMaxFace and zMinFace will be used as moving and fixed, respectively
+	# SPCNodesAndDOF is a list of lists [[nodeSet1, (DOFTuple)], [nodeSet2, (DOFTuple)], ...]
 
 	file = open(outputFile, "w")
 
@@ -42,12 +43,18 @@ def generateKeyFile(lattice, outputFile, elementSize=1, defaultDiameter=0.1, mov
 	file.write("$#     nid       dof       vad      lcid        sf       vid     death     birth\n")
 	writePrescribedVelocity(file, movingNodes, dof=3)
 
-	# write spc boundary conditions (fixed nodes)
+	# write spc boundary conditions (fixed nodes and SPCNodesAndDOF)
 	if fixedNodes == None:
 		fixedNodes = lattice.zMinFace
 	file.write("*BOUNDARY_SPC_NODE\n")
 	file.write("$#     nid       cid      dofx      dofy      dofz     dofrx     dofry     dofrz\n")
 	writeSPC(file, fixedNodes)
+	if SPCNodesAndDOF != None:
+		for nodesDOFPair in SPCNodesAndDOF:
+			nodeSet = nodesDOFPair[0]
+			DOF = nodesDOFPair[1]
+			dofx, dofy, dofz, dofrx, dofry, dofrz = DOF
+			writeSPC(file, nodeSet, dofx=dofx, dofy=dofy, dofz=dofz, dofrx=dofrx, dofry=dofry, dofrz=dofrz)
 
 	# Write *END keyword
 	file.write("*END")
