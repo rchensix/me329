@@ -37,13 +37,13 @@ def honeycombTessellation(sideLength=1, height=1):
 def diamondTessellation(width=1, depth=1, height=1):
 	diamondLattice = xlt.diamondLattice(width, depth, height)
 	diamondLattice.plot()
-	diamondLattice.tessellate(4, 3, 2)
+	diamondLattice.tessellate(4, 4, 4)
 	diamondLattice.plot()
 
 def triangleTessellation(sideLength=1, thickness=0.1):
 	triangleLattice = xlt.regularTriangleLattice(sideLength, thickness)
 	triangleLattice.plot()
-	triangleLattice.tessellate(1, 2, 1)
+	triangleLattice.tessellate(3, 3, 2)
 	triangleLattice.plot()
 
 def doubleSnapThroughTessellation():
@@ -55,3 +55,5 @@ def doubleSnapThroughTessellation():
 	dsnap2.plot()
 	dsnap2.tessellate(2,2,2)
 	dsnap2.plot()
+
+diamondTessellation()

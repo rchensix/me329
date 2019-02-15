@@ -248,6 +248,8 @@ def findPeriodicNodes(G, tol=1e-5):
 
 def network_plot_3D(G, elevation=30, angle=None, extents=None):
 
+    NODE_DISPLAY_SIZE = 10
+
     if isinstance(G, Lattice): 
         extents = G.extents
         G = G.G # make this function support plotting Lattice class directory
@@ -262,7 +264,8 @@ def network_plot_3D(G, elevation=30, angle=None, extents=None):
             xi = value[0]
             yi = value[1]
             zi = value[2]   
-            ax.scatter(xi, yi, zi, s=20+20*G.degree(key), edgecolors='k', alpha=0.7)
+            # ax.scatter(xi, yi, zi, s=20+20*G.degree(key), edgecolors='k', alpha=0.7)
+            ax.scatter(xi, yi, zi, s=NODE_DISPLAY_SIZE, edgecolors='k', alpha=0.7)
 
         for i, j in enumerate(G.edges()):
             x = np.array((pos[j[0]][0], pos[j[1]][0]))

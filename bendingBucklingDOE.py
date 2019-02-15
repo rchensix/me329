@@ -16,19 +16,26 @@ import numpy as np
 
 HOMEDIRECTORY = "/me329/rchensix/bending_buckling/V1/"
 LSCARDS = util.importDynaCardsList("defaultcards.k")
-DELAY = 5 # seconds; time between scans for completed jobs
+DELAY = 60 # seconds; time between scans for completed jobs
 THETA_SWEEP = [30, 45, 60, 75, 90, 105, 120, 135, 150]
 THETA_SWEEP_BABY = [40, 95]
 AR_SWEEP = [5, 7.5, 10, 12.5, 15, 17.5, 20]
 AR_SWEEP_BABY = [12, 16]
+NCPU = 2
+
+SUBMIT_DELAY = 60 # not used currently
 
 def postProcess(directory):
 	bndout = util.parseDynaBndout(directory + "bndout")
 	nodout = util.parseDynaNodout(directory + "nodout")
 	Fz = bndout[1][:,3]
 	uz = nodout[1][:,3]
+	plt.figure()
 	plt.plot(-uz, -Fz)
+	plt.xlabel("Displacement (m)")
+	plt.ylabel("Force (N)")
 	plt.savefig(directory + "load-displacement.png")
+	plt.close()
 
 def bendingBucklingLattice(theta12, theta23, AR1, AR2, AR3, length=10):
 	# Angles are defined in degrees!
@@ -46,7 +53,7 @@ def bendingBucklingLattice(theta12, theta23, AR1, AR2, AR3, length=10):
 	G.add_edge(1, 4, diameter=length/AR3) # right beam
 	return xlt.Lattice(G)
 
-def workflow(thetaSweep, ARSweep, length=10):
+def workflow(thetaSweep, ARSweep, length=10, verbose=2):
 	mc2 = sch.Scheduler()
 	submittedJobs = set()
 	completedJobs = set()
@@ -62,7 +69,7 @@ def workflow(thetaSweep, ARSweep, length=10):
 						keyFile = directory + "bendingBucklingLattice_" + "T12_" + str(theta12) + "_T23_" + str(theta23) + "_AR1_" + str(AR1) + "_AR2_" + str(AR2) + "_AR3_" + str(AR3) + ".k"
 						SPCNodesAndDOF = [[set(list(range(5, 32))), (0, 1, 0, 1, 0, 1)]]
 						util.generateKeyFile(lattice, keyFile, movingNodes=[1], fixedNodes=[2, 3, 4], SPCNodesAndDOF=SPCNodesAndDOF, cards=LSCARDS)
-						fullPath = sch.createLSDynaBashScript(keyFile, outputDirectory=directory)[0]
+						fullPath = sch.createLSDynaBashScript(keyFile, outputDirectory=directory, numCPU=NCPU)[0]
 						jobID = mc2.submit(fullPath)[0]
 						submittedJobs.add(jobID)
 						jobData[jobID] = directory
@@ -70,12 +77,14 @@ def workflow(thetaSweep, ARSweep, length=10):
 	print("Submitted jobs: " + str(submittedJobs) + "\n")
 	while(len(submittedJobs) != len(completedJobs)):
 		runningJobs = submittedJobs - completedJobs
-		print(sch.squeue()[0])
-		print("Completed jobs: " + str(completedJobs) + "\n")
-		print("Running jobs: " + str(runningJobs) + "\n")
+		if verbose >= 2: 
+			print("Completed jobs: " + str(completedJobs) + "\n")
+			print("Running jobs: " + str(runningJobs) + "\n")
+		if verbose >= 3:
+			print(sch.squeue()[0])
 		# check if any jobs have completed
 		for job in runningJobs:
-			print("Status of job " + str(job) + ": " + str(mc2.status(job)) + "\n")
+			if verbose >= 4: print("Status of job " + str(job) + ": " + str(mc2.status(job)) + "\n")
 			if mc2.status(job) == 1:
 				completedJobs.add(job)
 				directory = jobData[job]
@@ -83,4 +92,5 @@ def workflow(thetaSweep, ARSweep, length=10):
 		# print queue
 		time.sleep(DELAY) # wait
 
-workflow(THETA_SWEEP_BABY, AR_SWEEP_BABY, length=10)
+workflow(THETA_SWEEP_BABY, AR_SWEEP_BABY, length=10) # use the BABY SWEEPS to test
+# workflow(THETA_SWEEP, AR_SWEEP, length=10)
