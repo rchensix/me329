@@ -1,11 +1,11 @@
 """
 xlattice version 1.4
-Written by Ruiqi Chen (rchensix at stanford dot edu) and Lucas Zhou (zzh at stanford dot edu)
+Written by Ruiqi Chen (rchensix at stanford dot edu), Lucas Zhou (zzh at stanford dot edu) and Abhishek Tapadar (atapadar at Stanford dot Edu)
 February 12, 2019
 This module utilizes the networkx module to generate unit cell lattice structures
 
 SUMMARY OF LATTICE TYPES (AS OF VERSION 1.3)
--Sanp Through Lattice (single-sided and double-sided)
+-Snap Through Lattice (single-sided and double-sided)
 -Double Snap Through Lattice (single-sided and double-sided)
 -Simple Cubic 
 -BCC (type 1 and type 2)
@@ -13,6 +13,9 @@ SUMMARY OF LATTICE TYPES (AS OF VERSION 1.3)
 -Regular Hexagon
 -Diamond Lattice
 -Regular Triangle
+-Pervoskite Lattice
+-Stripped Pervoskite Lattice
+-Rigid Pervoskite Lattice
 
 NEW IN 1.4
 -Fixed bug in diamond lattice family
@@ -797,7 +800,244 @@ def regularTriangleLattice(sideLength=1, diameter=None):
 
     return Lattice(G)
 
+###################################################
+
+def generate_perovskiteLattice(width, depth, height):
+    G = nx.Graph()
+    
+    node_count = 1
+    G.add_node(node_count, pos=(0, 0, 0))
+    node_count += 1
+    G.add_node(node_count, pos=(width, 0, 0))
+    node_count += 1
+    G.add_node(node_count, pos=(width, depth, 0))
+    node_count += 1
+    G.add_node(node_count, pos=(0, depth, 0))
+    node_count += 1
+    G.add_node(node_count, pos=(0, 0, height))
+    node_count += 1
+    G.add_node(node_count, pos=(width, 0, height))
+    node_count += 1
+    G.add_node(node_count, pos=(width, depth, height))
+    node_count += 1
+    G.add_node(node_count, pos=(0, depth, height))
+    
+    node_count += 1
+    G.add_node(node_count, pos=(width/2, depth, height/2))
+    node_count += 1
+    G.add_node(node_count, pos=(0, depth/2, height/2))
+    node_count += 1
+    G.add_node(node_count, pos=(width/2, 0, height/2))
+    node_count += 1
+    G.add_node(node_count, pos=(width, depth/2, height/2))
+    node_count += 1
+    G.add_node(node_count, pos=(width/2, depth/2, height))
+    node_count += 1
+    G.add_node(node_count, pos=(width/2, depth/2, 0))
+    node_count += 1
+    G.add_node(node_count, pos=(width/2, depth/2, height/2))
+
+
+    for i in np.arange(1,5):
+        G.add_edge(i, i+4)
+    for j in [1,2,3,5,6,7]:
+        G.add_edge(j, j+1)
+    G.add_edge(1,4)
+    G.add_edge(5,8)
+    
+    G.add_edge(9,10)
+    G.add_edge(9,12)
+    G.add_edge(9,13)
+    G.add_edge(9,14)
+    G.add_edge(10,11)
+    G.add_edge(10,13)
+    G.add_edge(10,14)
+    G.add_edge(11,12)
+    G.add_edge(11,14)
+    G.add_edge(11,13)
+    G.add_edge(12,13)
+    G.add_edge(12,14)
+    
+    G.add_edge(9,15)
+    G.add_edge(10,15)
+    G.add_edge(11,15)
+    G.add_edge(12,15)
+    G.add_edge(13,15)
+    G.add_edge(14,15)
+    
+    
+    
+    movingNodes = [5, 6, 7, 8, 13]
+    fixedNodes = [1, 2, 3, 4, 12]
+    
+    return G, movingNodes, fixedNodes
+
+def perovskiteLattice(width, depth, height):
+    # uses the Lattice class instead
+    return Lattice(generate_perovskiteLattice(width, depth, height)[0])
+
+###################################################################################
+
+def generate_stripped_perovskiteLattice(width, depth, height):
+    G = nx.Graph()
+    
+    node_count = 9
+    G.add_node(node_count, pos=(width/2, depth, height/2))
+    node_count += 1
+    G.add_node(node_count, pos=(0, depth/2, height/2))
+    node_count += 1
+    G.add_node(node_count, pos=(width/2, 0, height/2))
+    node_count += 1
+    G.add_node(node_count, pos=(width, depth/2, height/2))
+    node_count += 1
+    G.add_node(node_count, pos=(width/2, depth/2, height))
+    node_count += 1
+    G.add_node(node_count, pos=(width/2, depth/2, 0))
+    node_count += 1
+    G.add_node(node_count, pos=(width/2, depth/2, height/2))
+    
+    G.add_edge(9,10)
+    G.add_edge(9,12)
+    G.add_edge(9,13)
+    G.add_edge(9,14)
+    G.add_edge(10,11)
+    G.add_edge(10,13)
+    G.add_edge(10,14)
+    G.add_edge(11,12)
+    G.add_edge(11,14)
+    G.add_edge(11,13)
+    G.add_edge(12,13)
+    G.add_edge(12,14)
+    
+    G.add_edge(9,15)
+    G.add_edge(10,15)
+    G.add_edge(11,15)
+    G.add_edge(12,15)
+    G.add_edge(13,15)
+    G.add_edge(14,15)
+    
+    
+    
+    movingNodes = [5, 6, 7, 8, 13]
+    fixedNodes = [1, 2, 3, 4, 12]
+    
+    return G, movingNodes, fixedNodes
+
+def stripped_perovskiteLattice(width, depth, height):
+    # uses the Lattice class instead
+    return Lattice(generate_perovskiteLattice(width, depth, height)[0])
+
+
+
+###################################################################################
+
+def generate_rigid_perovskiteLattice(width, depth, height):
+    G = nx.Graph()
+    
+    node_count = 1
+    G.add_node(node_count, pos=(0, 0, 0))
+    node_count += 1
+    G.add_node(node_count, pos=(width, 0, 0))
+    node_count += 1
+    G.add_node(node_count, pos=(width, depth, 0))
+    node_count += 1
+    G.add_node(node_count, pos=(0, depth, 0))
+    node_count += 1
+    G.add_node(node_count, pos=(0, 0, height))
+    node_count += 1
+    G.add_node(node_count, pos=(width, 0, height))
+    node_count += 1
+    G.add_node(node_count, pos=(width, depth, height))
+    node_count += 1
+    G.add_node(node_count, pos=(0, depth, height))
+    
+    node_count += 1
+    G.add_node(node_count, pos=(width/2, depth, height/2))
+    node_count += 1
+    G.add_node(node_count, pos=(0, depth/2, height/2))
+    node_count += 1
+    G.add_node(node_count, pos=(width/2, 0, height/2))
+    node_count += 1
+    G.add_node(node_count, pos=(width, depth/2, height/2))
+    node_count += 1
+    G.add_node(node_count, pos=(width/2, depth/2, height))
+    node_count += 1
+    G.add_node(node_count, pos=(width/2, depth/2, 0))
+    node_count += 1
+    G.add_node(node_count, pos=(width/2, depth/2, height/2))
+
+
+    for i in np.arange(1,5):
+        G.add_edge(i, i+4)
+    for j in [1,2,3,5,6,7]:
+        G.add_edge(j, j+1)
+    G.add_edge(1,4)
+    G.add_edge(5,8)
+    
+    G.add_edge(9,10)
+    G.add_edge(9,12)
+    G.add_edge(9,13)
+    G.add_edge(9,14)
+    G.add_edge(10,11)
+    G.add_edge(10,13)
+    G.add_edge(10,14)
+    G.add_edge(11,12)
+    G.add_edge(11,14)
+    G.add_edge(11,13)
+    G.add_edge(12,13)
+    G.add_edge(12,14)
+    
+    G.add_edge(9,15)
+    G.add_edge(10,15)
+    G.add_edge(11,15)
+    G.add_edge(12,15)
+    G.add_edge(13,15)
+    G.add_edge(14,15)
+    
+    G.add_edge(1,11)
+    G.add_edge(2,11)
+    G.add_edge(6,11)
+    G.add_edge(5,11)
+    
+    G.add_edge(4,9)
+    G.add_edge(8,9)
+    G.add_edge(7,9)
+    G.add_edge(3,9)
+    
+    G.add_edge(1,10)
+    G.add_edge(4,10)
+    G.add_edge(8,10)
+    G.add_edge(5,10)
+    
+    G.add_edge(2,12)
+    G.add_edge(3,12)
+    G.add_edge(7,12)
+    G.add_edge(6,12)
+    
+    G.add_edge(5,13)
+    G.add_edge(8,13)
+    G.add_edge(7,13)
+    G.add_edge(6,13)
+    
+    G.add_edge(1,14)
+    G.add_edge(2,14)
+    G.add_edge(3,14)
+    G.add_edge(4,14)
+    
+    
+    
+    movingNodes = [5, 6, 7, 8, 13]
+    fixedNodes = [1, 2, 3, 4, 12]
+    
+    return G, movingNodes, fixedNodes
+
+def rigid_perovskiteLattice(width, depth, height):
+    # uses the Lattice class instead
+    return Lattice(generate_perovskiteLattice(width, depth, height)[0])
+
 ###########################################################
+
+
 
 def print_to_file(G, outputFile, movingNodes=None, fixedNodes=None):
 
