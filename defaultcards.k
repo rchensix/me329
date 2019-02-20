@@ -1,9 +1,9 @@
 *KEYWORD  
 *CONTROL_TERMINATION
 $#  endtim    endcyc     dtmin    endeng    endmas     nosol     
-     150.0         0       0.0       0.01.000000E8         0
+     36.0         0       0.0       0.01.000000E8         0
 *CONTROL_TIMESTEP
-         0      0.67         0         0         0         0         0         0
+         0      0.25         0         0         0         0         0         0
 *CONTACT_AUTOMATIC_GENERAL_EDGEONLY
          0         0         5         5
        0.0       0.0    0.0000    0.0000   50.0000         0     0.0000.1000E+08
