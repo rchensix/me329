@@ -1,7 +1,7 @@
 """
-xlattice version 1.4
+xlattice version 1.5
 Written by Ruiqi Chen (rchensix at stanford dot edu) and Lucas Zhou (zzh at stanford dot edu)
-February 12, 2019
+February 20, 2019
 This module utilizes the networkx module to generate unit cell lattice structures
 
 SUMMARY OF LATTICE TYPES (AS OF VERSION 1.3)
@@ -13,6 +13,9 @@ SUMMARY OF LATTICE TYPES (AS OF VERSION 1.3)
 -Regular Hexagon
 -Diamond Lattice
 -Regular Triangle
+
+NEW IN 1.5
+-Fixed bug in double snap lattice family
 
 NEW IN 1.4
 -Fixed bug in diamond lattice family
@@ -403,7 +406,7 @@ def double_snap_through_lattice(inclined_angle1, inclined_angle2, edge_length, w
     else:  
         bottom_node_z2 = -math.tan(math.pi*(inclined_angle2/180)) * math.sqrt(2) / 2 * edge_length
         node_count += 1
-        G.add_node(node_count, pos=(edge_length/2, edge_length/2, -top_node_z2))
+        G.add_node(node_count, pos=(edge_length/2, edge_length/2, bottom_node_z2))
         for j in np.arange(4):
             G.add_edge(node_count-1, node_count-3-node_each_layer+wall_grid_size[1]*j)
             G.add_edge(node_count, wall_grid_size[1]*j+1)
