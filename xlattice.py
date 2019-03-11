@@ -6,6 +6,9 @@ This module utilizes the networkx module to generate unit cell lattice structure
 
 WARNING: This module is not compatible with older code that utilize xlattice 1.4 and below!
 
+NEW IN 2.1
+-Added mirror method in Lattice class
+
 NEW IN 2.0
 -All lattice family generators have been moved to a separate module called latticeDatabase
 -All future lattices are wrapped in Lattice class by default
@@ -41,7 +44,6 @@ NEW IN 1.0
 -Initial release
 
 """
-from __future__ import division
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
@@ -81,6 +83,7 @@ class Lattice:
     # new lattices are always added on the +x, +y, and +z faces
     # if inPlace is False, a newly tessellated copy of the original Lattice will be returned
     # otherwise, the Lattice will be modified in place
+    # if mirror is True, every other unit cell will be mirror images (this guarantees tessellation even for non-symmetric unit cells)
         assert(nX > 0 and nY > 0 and nZ > 0)
 
         if not inPlace:
@@ -150,6 +153,28 @@ class Lattice:
         for n in list(G):
             x, y, z = G.nodes[n]["pos"]
             G.nodes[n]["pos"] = (mx*x, my*y, mz*z)
+        if not inPlace:
+            return Lattice(G, self.tol)
+
+    def mirror(self, plane, inPlace=True):
+        # options are:
+        # plane == 0: mirror about YZ plane
+        # plane == 1: mirror about XZ plane
+        # plane == 2: mirror about XY plane
+        assert(plane >= 0 and plane <= 2)
+        if inPlace:
+            G = self.G
+        else:
+            G = self.G.copy()
+        for n in list(G):
+            x, y, z = G.nodes[n]["pos"]
+            if plane == 0:
+                x = self.extents[1] + self.extents[0] - x
+            elif plane == 1:
+                y = self.extents[3] + self.extents[2] - y
+            elif plane == 2:
+                z = self.extents[5] + self.extents[4] - z
+            G.nodes[n]["pos"] = (x, y, z)
         if not inPlace:
             return Lattice(G, self.tol)
 
@@ -337,9 +362,6 @@ def network_plot_3D(G, elevation=30, angle=None, extents=None):
 
     plt.show()
     return
-
-
-
 
 ###########################################################
 
