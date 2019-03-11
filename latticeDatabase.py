@@ -1,6 +1,7 @@
 import networkx as nx
 import xlattice as xlt
 import math
+import numpy as np
 
 # Written by Ruiqi Chen (rchensix at stanford dot edu), Lucas Zhou (zzh at stanford dot edu), and Abhishek Tapadar (abhishektapadar at stanford dot edu)
 # This module holds a collection of parameterizable lattice structures implemented using NetworkX and XLattice
